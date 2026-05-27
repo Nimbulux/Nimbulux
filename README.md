@@ -1,16 +1,23 @@
-## Hi there 👋
+# Nimbulux
 
-<!--
-**Nimbulux/Nimbulux** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+> [!INFO]
+> 一个正在建一切的家伙  
+> 对可爱的东西没有什么抵抗力...  
 
-Here are some ideas to get you started:
+> [!IMPORTANT]  
+> 拿代码去用注意<font color=red>协议</font>!
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+## 技术栈
+
+- **系统**：I use Arch Linux, btw. (
+- **许可证**：AGPLv3 死忠粉。传教~~~
+
+## 联系我
+
+- 博客：[nimbulux.github.io](https://nimbulux.github.io)
+- 邮箱：`2121402422@qq.com`
+- 或者直接开 Issue 聊天。
+
+## 关于这个库
+
+这是我的 GitHub 主页。
