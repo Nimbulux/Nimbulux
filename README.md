@@ -16,6 +16,7 @@
 
 - 博客：[nimbulux.github.io](https://nimbulux.github.io)
 - 邮箱：`2121402422@qq.com`
+- Bili：[Bilibili](https://space.bilibili.com/1959403327) *`*不要看我的视频! 有点羞耻`*
 - 或者直接开 Issue 聊天。
 
 ## 关于这个库
