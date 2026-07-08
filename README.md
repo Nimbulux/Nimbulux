@@ -25,8 +25,8 @@
 
 ## 统计卡片
 
-![Nimbulux's GitHub stats](https://github-readme-stats.vercel.app/api?username=Nimbulux&show_icons=true&theme=tokyonight)
-![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=Nimbulux&layout=compact&theme=tokyonight)
+![Nimbulux's GitHub stats](profile/stats.svg)
+![Top Langs](profile/top-langs.svg)
 
 ## 联系我
 
