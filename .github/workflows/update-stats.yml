@@ -12,12 +12,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # 关键：checkout 时带上 submodule，并用 PAT 以便后续访问 B
+      # checkout C（元仓库），不用 submodules
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          token: ${{ secrets.GH_UPREPOLIST }}
-          fetch-depth: 0
 
       # 生成统计卡片
       - name: Generate stats card
@@ -36,7 +32,7 @@ jobs:
           path: profile/top-langs.svg
           token: ${{ secrets.GH_TOKEN }}
 
-      # 生成 RepoList.json / RepoStar.json
+      # 生成 RepoList.json / RepoStar.json（写入 C 的 datas/）
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -47,22 +43,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           REPO_OWNER: ${{ github.repository_owner }}
         run: python scripts/generate_repo_list.py
-      
-      - name: Debug A repo state
-        run: |
-          echo "== branch =="
-          git branch --show-current
-          echo "== .gitmodules =="
-          cat .gitmodules || echo "(no .gitmodules)"
-          echo "== ls-files --stage app =="
-          git ls-files --stage app || echo "(app not in index)"
-          echo "== submodule status =="
-          git submodule status || true
 
       # 推送到 B 的 self 分支
       - name: Publish JSON to B (self branch)
         env:
-          DATA_REPO: ${{ vars.DATA_REPO }}
+          DATA_REPO: ${{ vars.DATA_REPO }}         # Nimbulux/Xiao-Blog-Edit
           DATA_REPO_TOKEN: ${{ secrets.GH_UPREPOLIST }}
           DATA_BRANCH: self
         run: |
@@ -75,12 +60,12 @@ jobs:
 
           mkdir -p "$WORKDIR/repo"
           cp datas/RepoList.json "$WORKDIR/repo/RepoList.json"
-          cp datas/RepoStar.json "$WORKDIR/repo/star.json"
+          cp datas/RepoStar.json "$WORKDIR/repo/RepoStar.json"
 
           cd "$WORKDIR"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add repo/RepoList.json repo/star.json
+          git add repo/RepoList.json repo/RepoStar.json
 
           if git diff --cached --quiet; then
             echo "No changes in B."
@@ -89,34 +74,52 @@ jobs:
             git push origin "HEAD:${DATA_BRANCH}"
           fi
 
-      # 更新 A 里的 submodule 指针到 B 的 self 最新 commit
-      - name: Update submodule pointer in A
+      # 更新 A 里的 submodule 指针（在临时目录里 clone A 来操作）
+      - name: Bump submodule pointer in A
         env:
-          DATA_REPO_TOKEN: ${{ secrets.GH_UPREPOLIST }}
+          META_A_REPO: ${{ vars.META_A_REPO }}        # Nimbulux/nimbulux.github.io
+          DATA_REPO: ${{ vars.DATA_REPO }}            # Nimbulux/Xiao-Blog-Edit
+          DATA_BRANCH: self
+          TOKEN: ${{ secrets.GH_UPREPOLIST }}
         run: |
           set -euo pipefail
+
+          WORKDIR="$(mktemp -d)"
+          git clone \
+            "https://x-access-token:${TOKEN}@github.com/${META_A_REPO}.git" \
+            "$WORKDIR"
+
+          cd "$WORKDIR"
+
+          # 安全检查：A 里 app 必须是 submodule
+          if ! git ls-files --stage app | grep -q '^160000'; then
+            echo "::warning::A 里的 app 不是 submodule，跳过。"
+            exit 0
+          fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+          # 让 submodule 更新时用 PAT，而不是默认匿名
           git config submodule.app.url \
-            "https://x-access-token:${DATA_REPO_TOKEN}@github.com/${{ vars.DATA_REPO }}.git"
+            "https://x-access-token:${TOKEN}@github.com/${DATA_REPO}.git"
 
-          git submodule update --remote --init app
+          # 把 app 指针更新到 B 的 self 分支最新 commit
+          git submodule update --init --remote app
 
           git add app
           if git diff --cached --quiet; then
             echo "Submodule pointer unchanged."
           else
-            git commit -m "chore: bump app submodule to B@self"
+            git commit -m "chore: bump app submodule to B@${DATA_BRANCH}"
             git push
           fi
 
-      # 提交元仓库自身（README 卡片、datas 等）
-      - name: Commit meta repo
+      # 提交 C 自身（profile 卡片）
+      - name: Commit meta repo C
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add profile/*.svg
+          git add profile/*.svg datas/*.json
           git commit -m "chore: update stats cards and repo data" || exit 0
           git push
