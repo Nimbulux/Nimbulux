@@ -2,9 +2,7 @@ name: Update README stats cards
 
 on:
   schedule:
-    # 每天 UTC 时间 0 点（北京时间早上 8 点）自动运行
     - cron: "0 0 * * *"
-  # 允许你从 Actions 标签页手动触发
   workflow_dispatch:
 
 permissions:
@@ -34,10 +32,22 @@ jobs:
           path: profile/top-langs.svg
           token: ${{ secrets.GH_TOKEN }}
 
-      - name: Commit cards
+      # 生成 RepoList.json / RepoStar.json
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate repo data JSON
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: python scripts/generate_repo_list.py
+
+      - name: Commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add profile/*.svg
-          git commit -m "chore: update stats cards" || exit 0
+          git add profile/*.svg datas/*.json
+          git commit -m "chore: update stats cards and repo data" || exit 0
           git push
