@@ -89,13 +89,13 @@ def read_languages(owner: str, repo_name: str):
 
 def build_entry(owner: str, repo: dict) -> dict:
     repo_name = repo["name"]
-    title = read_readme_title(owner, repo_name)
+    title = None if repo.get("fork") else read_readme_title(owner, repo_name)
     langs = read_languages(owner, repo_name)
     return {
-        "id": str(repo["id"]),
+        "id": repo_name,
         "name": title or repo_name,
         "full_name": repo["full_name"],
-        "url": repo.get("homepage") or "",
+        "url": "" if repo.get("fork") else (repo.get("homepage") or ""),
         "repo": repo["html_url"],
         "desc": repo.get("description") or "",
         "stars": repo.get("stargazers_count", 0),
@@ -133,7 +133,7 @@ def main() -> None:
     repos = [
         r
         for r in list_user_repos(OWNER)
-        if not r.get("fork") and not r.get("archived")
+        if not r.get("archived")
     ]
 
     entries = [build_entry(OWNER, r) for r in repos]
