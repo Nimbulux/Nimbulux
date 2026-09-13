@@ -1,6 +1,20 @@
 [
   {
-    "id": "1293953185",
+    "id": "Xiao-Blog-Edit",
+    "name": "Xiao-Blog-Edit",
+    "full_name": "Nimbulux/Xiao-Blog-Edit",
+    "url": "",
+    "repo": "https://github.com/Nimbulux/Xiao-Blog-Edit",
+    "desc": "由Xiao-Blog克隆 为自己的网站调整后套用",
+    "stars": 0,
+    "tags": [
+      "JavaScript",
+      "CSS",
+      "HTML"
+    ]
+  },
+  {
+    "id": "nimbulux.github.io",
     "name": "一个博客",
     "full_name": "Nimbulux/nimbulux.github.io",
     "url": "https://nimbulux.github.io/",
