@@ -12,7 +12,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # 关键：checkout 时带上 submodule，并用 PAT 以便后续访问 B
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GH_UPREPOLIST }}
+          fetch-depth: 0
 
       # 生成统计卡片
       - name: Generate stats card
@@ -23,7 +28,6 @@ jobs:
           path: profile/stats.svg
           token: ${{ secrets.GH_TOKEN }}
 
-      # 生成语言卡片
       - name: Generate top languages card
         uses: readme-tools/github-readme-stats-action@v1
         with:
@@ -44,10 +48,64 @@ jobs:
           REPO_OWNER: ${{ github.repository_owner }}
         run: python scripts/generate_repo_list.py
 
-      - name: Commit
+      # 推送到 B 的 self 分支
+      - name: Publish JSON to B (self branch)
+        env:
+          DATA_REPO: ${{ vars.DATA_REPO }}
+          DATA_REPO_TOKEN: ${{ secrets.GH_UPREPOLIST }}
+          DATA_BRANCH: self
+        run: |
+          set -euo pipefail
+
+          WORKDIR="$(mktemp -d)"
+          git clone --depth 1 --branch "${DATA_BRANCH}" \
+            "https://x-access-token:${DATA_REPO_TOKEN}@github.com/${DATA_REPO}.git" \
+            "$WORKDIR"
+
+          mkdir -p "$WORKDIR/repo"
+          cp datas/RepoList.json "$WORKDIR/repo/RepoList.json"
+          cp datas/RepoStar.json "$WORKDIR/repo/star.json"
+
+          cd "$WORKDIR"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add repo/RepoList.json repo/star.json
+
+          if git diff --cached --quiet; then
+            echo "No changes in B."
+          else
+            git commit -m "chore: sync repo data $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push origin "HEAD:${DATA_BRANCH}"
+          fi
+
+      # 更新 A 里的 submodule 指针到 B 的 self 最新 commit
+      - name: Update submodule pointer in A
+        env:
+          DATA_REPO_TOKEN: ${{ secrets.GH_UPREPOLIST }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git config submodule.app.url \
+            "https://x-access-token:${DATA_REPO_TOKEN}@github.com/${{ vars.DATA_REPO }}.git"
+
+          git submodule update --remote --init app
+
+          git add app
+          if git diff --cached --quiet; then
+            echo "Submodule pointer unchanged."
+          else
+            git commit -m "chore: bump app submodule to B@self"
+            git push
+          fi
+
+      # 提交元仓库自身（README 卡片、datas 等）
+      - name: Commit meta repo
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add profile/*.svg datas/*.json
+          git add profile/*.svg
           git commit -m "chore: update stats cards and repo data" || exit 0
           git push
