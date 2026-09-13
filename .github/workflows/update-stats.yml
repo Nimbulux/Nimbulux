@@ -47,6 +47,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           REPO_OWNER: ${{ github.repository_owner }}
         run: python scripts/generate_repo_list.py
+      
+      - name: Debug A repo state
+        run: |
+          echo "== branch =="
+          git branch --show-current
+          echo "== .gitmodules =="
+          cat .gitmodules || echo "(no .gitmodules)"
+          echo "== ls-files --stage app =="
+          git ls-files --stage app || echo "(app not in index)"
+          echo "== submodule status =="
+          git submodule status || true
 
       # 推送到 B 的 self 分支
       - name: Publish JSON to B (self branch)
