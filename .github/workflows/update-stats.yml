@@ -74,47 +74,6 @@ jobs:
             git push origin "HEAD:${DATA_BRANCH}"
           fi
 
-      # 更新 A 里的 submodule 指针（在临时目录里 clone A 来操作）
-      - name: Bump submodule pointer in A
-        env:
-          META_A_REPO: ${{ vars.META_A_REPO }}        # Nimbulux/nimbulux.github.io
-          DATA_REPO: ${{ vars.DATA_REPO }}            # Nimbulux/Xiao-Blog-Edit
-          DATA_BRANCH: self
-          TOKEN: ${{ secrets.GH_UPREPOLIST }}
-        run: |
-          set -euo pipefail
-
-          WORKDIR="$(mktemp -d)"
-          git clone \
-            "https://x-access-token:${TOKEN}@github.com/${META_A_REPO}.git" \
-            "$WORKDIR"
-
-          cd "$WORKDIR"
-
-          # 安全检查：A 里 app 必须是 submodule
-          if ! git ls-files --stage app | grep -q '^160000'; then
-            echo "::warning::A 里的 app 不是 submodule，跳过。"
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          # 让 submodule 更新时用 PAT，而不是默认匿名
-          git config submodule.app.url \
-            "https://x-access-token:${TOKEN}@github.com/${DATA_REPO}.git"
-
-          # 把 app 指针更新到 B 的 self 分支最新 commit
-          git submodule update --init --remote app
-
-          git add app
-          if git diff --cached --quiet; then
-            echo "Submodule pointer unchanged."
-          else
-            git commit -m "chore: bump app submodule to B@${DATA_BRANCH}"
-            git push
-          fi
-
       # 提交 C 自身（profile 卡片）
       - name: Commit meta repo C
         run: |
